@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AXIOR ACADEMY | The Titan Archive</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --gold: #C5A021; --dark: #111; --light: #f4f4f9; --green: #27ae60; --red: #c0392b; --blue: #2980b9;
+        }
+        * { box-sizing: border-box; }
+        body { margin: 0; font-family: 'Inter', sans-serif; background: var(--light); color: #333; }
+        
+        /* HEADER */
+        header {
+            background: var(--dark); color: white; padding: 1rem 2rem;
+            display: flex; justify-content: space-between; align-items: center;
+            border-bottom: 4px solid var(--gold); position: sticky; top: 0; z-index: 1000;
+        }
+        .brand { font-size: 1.5rem; font-weight: 900; letter-spacing: -1px; }
+        .stats { background: var(--gold); padding: 5px 15px; border-radius: 20px; font-weight: bold; color: #fff; font-size: 0.9rem; }
+
+        /* LAYOUT */
+        .layout { display: grid; grid-template-columns: 260px 1fr; min-height: 100vh; }
+        
+        /* SIDEBAR */
+        nav { background: white; border-right: 1px solid #ddd; padding: 20px; height: calc(100vh - 75px); position: sticky; top: 75px; overflow-y: auto; }
+        .nav-head { font-size: 0.75rem; text-transform: uppercase; color: #888; margin: 20px 0 10px; letter-spacing: 1px; font-weight: 800; }
+        .nav-item {
+            display: block; padding: 12px; margin-bottom: 5px; border-radius: 8px; cursor: pointer;
+            transition: 0.2s; color: #555; font-weight: 500;
+        }
+        .nav-item:hover { background: #f0f0f0; color: var(--gold); padding-left: 18px; }
+        .nav-item.active { background: var(--gold); color: white; font-weight: 700; }
+
+        /* MAIN CONTENT */
+        main { padding: 40px; max-width: 1000px; margin: 0 auto; width: 100%; }
+        
+        .card { background: white; border-radius: 12px; padding: 25px; margin-bottom: 20px; box-shadow: 0 4px 10px rgba(0,0,0,0.05); border: 1px solid #eee; }
+        .card h2 { margin-top: 0; color: var(--dark); border-bottom: 2px solid var(--gold); display: inline-block; padding-bottom: 5px; }
+        
+        /* QUIZ STYLES */
+        .q-box { margin-bottom: 30px; padding-bottom: 20px; border-bottom: 1px dashed #ccc; }
+        .q-text { font-weight: 600; font-size: 1.1rem; margin-bottom: 10px; }
+        .input-group { display: flex; gap: 10px; margin-top: 15px; }
+        input[type="text"] { 
+            flex: 1; padding: 12px; border: 2px solid #ddd; border-radius: 8px; outline: none; transition: 0.3s; font-size: 1rem; 
+        }
+        input[type="text"]:focus { border-color: var(--gold); }
+        
+        button.btn { 
+            padding: 12px 25px; background: var(--dark); color: white; border: none; 
+            border-radius: 8px; cursor: pointer; font-weight: bold; transition: 0.2s; 
+        }
+        button.btn:hover { background: var(--gold); }
+
+        .feedback { 
+            margin-top: 10px; padding: 15px; border-radius: 8px; display: none; font-size: 0.95rem; line-height: 1.5;
+        }
+        .feedback.correct { background: #eafaf1; border-left: 5px solid var(--green); color: #1e8449; }
+        .feedback.wrong { background: #fdedec; border-left: 5px solid var(--red); color: #c0392b; }
+
+        /* LIBRARY STYLES */
+        .lib-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(100%, 1fr)); gap: 20px; }
+        .book-card { border-left: 5px solid var(--blue); }
+        .book-summary { display: none; margin-top: 15px; padding: 15px; background: #f8f9fa; border-radius: 8px; line-height: 1.6; color: #444; }
+
+        /* RESPONSIVE */
+        @media (max-width: 768px) {
+            .layout { grid-template-columns: 1fr; }
+            nav { display: none; } /* Simplified for mobile example */
+        }
+    </style>
+</head>
+<body>
+
+<header>
+    <div class="brand">AXIOR <span style="color:var(--gold)">ACADEMY</span></div>
+    <div class="stats">Mastery: <span id="xp-val">0</span> XP</div>
+</header>
+
+<div class="layout">
+    <nav>
+        <div class="nav-head">Materi Utama</div>
+        <div class="nav-item" onclick="app.loadQuiz('history')">Sejarah Dunia</div>
+        <div class="nav-item" onclick="app.loadQuiz('science')">Sains Murni</div>
+        <div class="nav-item" onclick="app.loadQuiz('math')">Matematika (Generator)</div>
+        
+        <div class="nav-head">Bahasa</div>
+        <div class="nav-item" onclick="app.loadQuiz('lang_en')">English Advanced</div>
+        <div class="nav-item" onclick="app.loadQuiz('lang_es')">Español</div>
+        <div class="nav-item" onclick="app.loadQuiz('lang_zh')">Mandarin</div>
+
+        <div class="nav-head">Evaluasi & Literasi</div>
+        <div class="nav-item active" onclick="app.loadExam()">Ujian Akhir (Acak)</div>
+        <div class="nav-item" onclick="app.loadLibrary()">Perpustakaan (10 Buku)</div>
+    </nav>
+
+    <main id="main-area">
+        </main>
+</div>
+
+<script>
+    const app = {
+        xp: 0,
+        
+        // DATABASE MATERI (Hardcoded High Quality Questions)
+        data: {
+            history: [
+                {q: "Tahun berapa Tembok Berlin runtuh, menandai akhir Perang Dingin?", a: "1989", e: "Runtuhnya tembok ini menyatukan kembali Jerman Barat dan Timur."},
+                {q: "Siapa penulis naskah Proklamasi Kemerdekaan Indonesia selain Soekarno dan Hatta?", a: "achmad soebardjo", e: "Achmad Soebardjo memiliki peran kunci dalam perumusan naskah di rumah Laksamana Maeda."},
+                {q: "Perjanjian apa yang mengakhiri Perang Dunia I pada tahun 1919?", a: "perjanjian versailles", e: "Perjanjian ini membebankan reparasi perang yang berat kepada Jerman."},
+                {q: "Revolusi Perancis dimulai dengan penyerbuan penjara apa?", a: "bastille", e: "Penyerbuan Bastille terjadi pada 14 Juli 1789."},
+                {q: "Siapa Kaisar Jepang yang memerintah selama Restorasi Meiji?", a: "mutsuhito", e: "Kaisar Mutsuhito (Meiji) memimpin modernisasi Jepang dari feodal ke industri."},
+                {q: "Peradaban kuno yang terletak di antara sungai Tigris dan Efrat disebut?", a: "mesopotamia", e: "Wilayah ini sekarang sebagian besar adalah Irak modern."},
+                {q: "Siapa penjelajah Portugis yang pertama kali mengelilingi dunia (meski tewas di jalan)?", a: "ferdinand magellan", e: "Magellan tewas di Filipina, namun armadanya (Victoria) berhasil kembali ke Spanyol."},
+                {q: "Organisasi apa yang didirikan pada 1945 untuk menjaga perdamaian dunia?", a: "pbb", e: "Perserikatan Bangsa-Bangsa (United Nations) didirikan pasca PD II."},
+                {q: "Perang Dingin adalah konflik ideologi antara Amerika Serikat dan...?", a: "uni soviet", e: "Konflik antara Kapitalisme (Barat) dan Komunisme (Timur)."},
+                {q: "Siapa wanita pertama yang memenangkan Hadiah Nobel dua kali?", a: "marie curie", e: "Ia memenangkan Nobel Fisika dan Kimia untuk penelitian radioaktivitas."},
+                {q: "Kerajaan Hindu tertua di Indonesia adalah?", a: "kutai", e: "Dibuktikan dengan prasasti Yupa di Kalimantan Timur (Abad ke-4 M)."},
+                {q: "Peristiwa G30S terjadi pada tahun?", a: "1965", e: "Sebuah peristiwa tragis yang mengubah lanskap politik Indonesia."},
+                {q: "Siapa pemimpin gerakan anti-apartheid di Afrika Selatan?", a: "nelson mandela", e: "Ia dipenjara selama 27 tahun sebelum menjadi presiden kulit hitam pertama Afsel."},
+                {q: "Konferensi Asia Afrika (1955) diselenggarakan di kota?", a: "bandung", e: "Menghasilkan Dasasila Bandung yang melawan kolonialisme."},
+                {q: "Siapa penemu mesin uap yang memicu Revolusi Industri?", a: "james watt", e: "Mesin uap memungkinkan mekanisasi pabrik dan transportasi."},
+                {q: "Ratu Mesir kuno yang terkenal dengan kecantikannya dan hubungannya dengan Julius Caesar?", a: "cleopatra", e: "Cleopatra VII adalah firaun terakhir Mesir Ptolemaik."},
+                {q: "Tahun berapa manusia pertama kali mendarat di Bulan (Apollo 11)?", a: "1969", e: "Neil Armstrong dan Buzz Aldrin mendarat pada 20 Juli 1969."},
+                {q: "Apa nama jalur perdagangan kuno yang menghubungkan Tiongkok dan Eropa?", a: "jalur sutra", e: "Jalur ini tidak hanya membawa sutra, tapi juga rempah, agama, dan penyakit."},
+                {q: "Siapa tokoh yang dikenal sebagai Bapak Pendidikan Nasional Indonesia?", a: "ki hajar dewantara", e: "Pendiri Taman Siswa dan semboyan Tut Wuri Handayani."},
+                {q: "Kekaisaran Romawi Barat runtuh pada tahun?", a: "476", e: "Menandai dimulainya Abad Pertengahan di Eropa."}
+            ],
+            science: [
+                {q: "Apa unit dasar kehidupan dalam biologi?", a: "sel", e: "Sel adalah unit struktural dan fungsional terkecil dari makhluk hidup."},
+                {q: "Rumus kimia untuk air adalah?", a: "h2o", e: "Terdiri dari 2 atom Hidrogen dan 1 atom Oksigen."},
+                {q: "Planet terbesar di tata surya kita adalah?", a: "yupiter", e: "Yupiter adalah raksasa gas."},
+                {q: "Apa organel sel yang berfungsi sebagai 'pembangkit tenaga' (powerhouse)?", a: "mitokondria", e: "Tempat terjadinya respirasi seluler untuk menghasilkan energi (ATP)."},
+                {q: "Kecepatan cahaya dalam ruang hampa kira-kira ... km/detik?", a: "300000", e: "Tepatnya 299.792.458 m/s."},
+                {q: "Siapa yang merumuskan hukum gravitasi universal?", a: "isaac newton", e: "Hukum ini menjelaskan gaya tarik menarik antar benda bermassa."},
+                {q: "Apa unsur kimia dengan simbol 'Fe'?", a: "besi", e: "Diambil dari bahasa Latin 'Ferrum'."},
+                {q: "Proses tumbuhan membuat makanan menggunakan cahaya disebut?", a: "fotosintesis", e: "Mengubah CO2 dan air menjadi glukosa dan oksigen."},
+                {q: "Apa nama galaksi tempat Bumi berada?", a: "bimasakti", e: "Atau Milky Way dalam bahasa Inggris."},
+                {q: "Zat yang tidak dapat diuraikan lagi menjadi zat yang lebih sederhana disebut?", a: "unsur", e: "Contoh: Emas, Oksigen, Karbon."},
+                {q: "Bagian atom yang bermuatan negatif adalah?", a: "elektron", e: "Elektron mengelilingi inti atom."},
+                {q: "pH 7 menunjukkan bahwa suatu larutan bersifat?", a: "netral", e: "Di bawah 7 asam, di atas 7 basa."},
+                {q: "Hewan yang memakan tumbuhan dan daging disebut?", a: "omnivora", e: "Manusia adalah contoh omnivora."},
+                {q: "Tulang terpanjang pada tubuh manusia adalah?", a: "femur", e: "Tulang paha."},
+                {q: "Lapisan gas yang menyelimuti bumi disebut?", a: "atmosfer", e: "Melindungi kehidupan dari radiasi UV dan menjaga suhu."},
+                {q: "Alat untuk mengukur gempa bumi adalah?", a: "seismograf", e: "Skala yang sering digunakan adalah Richter."},
+                {q: "Perubahan wujud dari padat langsung ke gas disebut?", a: "menyublim", e: "Contoh: Kapur barus yang habis."},
+                {q: "Golongan darah yang disebut donor universal adalah?", a: "o", e: "Golongan O negatif bisa diberikan ke hampir semua golongan darah."},
+                {q: "Hukum Ohm dalam kelistrikan adalah V = I kali ...?", a: "r", e: "Tegangan (V) = Arus (I) x Hambatan (R)."},
+                {q: "DNA berbentuk seperti tangga berpilin, struktur ini disebut?", a: "double helix", e: "Ditemukan oleh Watson dan Crick."}
+            ],
+            lang_en: [
+                {q: "Translate: 'Knowledge is power'", a: "ilmu adalah kekuatan", e: "Frasa terkenal dari Francis Bacon."},
+                {q: "Past tense of 'Run' is?", a: "ran", e: "Run (Present) -> Ran (Past) -> Run (Participle)."},
+                {q: "What is the synonym of 'Happy' starting with J?", a: "joyful", e: "Bisa juga Jovial."},
+                {q: "Translate: 'Never give up'", a: "jangan menyerah", e: "Ungkapan motivasi umum."},
+                {q: "Antonym of 'Generous'?", a: "stingy", e: "Stingy berarti pelit/kikir."},
+                {q: "What do you call a person who travels to space?", a: "astronaut", e: "Berasal dari kata Yunani 'astron' (bintang) dan 'nautes' (pelaut)."},
+                {q: "Translate: 'Better late than never'", a: "lebih baik terlambat daripada tidak sama sekali", e: "Peribahasa umum."},
+                {q: "Plural form of 'Child'?", a: "children", e: "Bentuk jamak tidak beraturan."},
+                {q: "What is the study of life called?", a: "biology", e: "Bio (hidup) + Logy (ilmu)."},
+                {q: "Translate: 'Actions speak louder than words'", a: "tindakan berbicara lebih keras daripada kata-kata", e: "Perbuatan lebih penting dari janji."}
+            ],
+            lang_es: [
+                {q: "Apa arti 'Buenos dias'?", a: "selamat pagi", e: "Salam standar pagi hari."},
+                {q: "Angka 'Satu' dalam Spanyol?", a: "uno", e: "Uno, Dos, Tres..."},
+                {q: "Apa arti 'Gracias'?", a: "terima kasih", e: "Jawaban sopan standar."},
+                {q: "Apa arti 'Amigo'?", a: "teman", e: "Friend dalam bahasa Inggris."},
+                {q: "Apa arti 'Biblioteca'?", a: "perpustakaan", e: "Tempat buku disimpan."},
+                {q: "Warna 'Rojo' artinya?", a: "merah", e: "Warna darah."},
+                {q: "Apa arti 'Familia'?", a: "keluarga", e: "Sangat mirip dengan bahasa Inggris 'Family'."},
+                {q: "Kata ganti 'Saya' dalam Spanyol?", a: "yo", e: "Contoh: Yo soy (Saya adalah)."},
+                {q: "Apa arti 'Amor'?", a: "cinta", e: "Kata universal untuk kasih sayang."},
+                {q: "Apa arti 'Agua'?", a: "air", e: "Kebutuhan dasar manusia."}
+            ],
+            lang_zh: [
+                {q: "Apa arti 'Ni hao'?", a: "halo", e: "Salam pembuka standar."},
+                {q: "Apa arti 'Xie xie'?", a: "terima kasih", e: "Diucapkan dua kali dengan nada ringan."},
+                {q: "Angka 'Satu' dalam Mandarin (Pinyin)?", a: "yi", e: "Yi, Er, San..."},
+                {q: "Apa arti 'Wo ai ni'?", a: "aku cinta kamu", e: "Ungkapan kasih sayang."},
+                {q: "Apa arti 'Lao shi'?", a: "guru", e: "Panggilan hormat untuk pengajar."},
+                {q: "Apa arti 'Xue xi'?", a: "belajar", e: "Aktivitas menuntut ilmu."},
+                {q: "Negara 'Zhong Guo' artinya?", a: "tiongkok", e: "Secara harfiah berarti 'Negara Tengah'."},
+                {q: "Apa arti 'Peng you'?", a: "teman", e: "Sahabat atau kawan."},
+                {q: "Apa arti 'Zai jian'?", a: "sampai jumpa", e: "Ucapan perpisahan."},
+                {q: "Apa arti 'Ren'?", a: "orang", e: "Huruf kanjinya berbentuk seperti manusia melangkah."}
+            ]
+        },
+
+        books: [
+            {t: "Sapiens", a: "Yuval Noah Harari", s: "Buku ini merangkum sejarah umat manusia dari Zaman Batu hingga Abad ke-21. Harari berargumen bahwa Homo Sapiens menguasai dunia karena kemampuan unik kita untuk percaya pada hal-hal fiktif (seperti negara, uang, HAM) yang memungkinkan kerja sama dalam jumlah besar."},
+            {t: "Guns, Germs, and Steel", a: "Jared Diamond", s: "Diamond menjelaskan bahwa kesenjangan kekuatan antar peradaban bukan karena genetika, melainkan faktor geografi. Eurasia maju lebih cepat karena orientasi benua Timur-Barat yang memudahkan penyebaran tanaman domestik, hewan ternak, dan teknologi, serta kekebalan terhadap kuman."},
+            {t: "Cosmos", a: "Carl Sagan", s: "Sebuah perjalanan puitis melintasi alam semesta. Sagan menjelaskan evolusi kosmik, asal-usul kehidupan, dan tempat manusia di antariksa. Kutipan terkenalnya: 'Kita terbuat dari debu bintang', yang berarti atom dalam tubuh kita ditempa di inti bintang yang meledak."},
+            {t: "The 7 Habits", a: "Stephen Covey", s: "Buku pengembangan diri yang berfokus pada perubahan karakter dari dalam. 7 Kebiasaan: 1. Jadilah Proaktif, 2. Mulai dengan Tujuan Akhir, 3. Dahulukan yang Utama, 4. Berpikir Menang-Menang, 5. Mengerti dulu baru Dimengerti, 6. Sinergi, 7. Asah Gergaji."},
+            {t: "Atomic Habits", a: "James Clear", s: "Perubahan besar berasal dari ratusan keputusan kecil. Clear memperkenalkan konsep bahwa kebiasaan adalah bunga majemuk dari pengembangan diri. Fokuslah membangun sistem identitas ('Saya adalah pembaca'), bukan sekadar tujuan ('Saya ingin baca buku')."},
+            {t: "Filosofi Teras", a: "Henry Manampiring", s: "Penjelasan Stoisisme dalam konteks Indonesia. Mengajarkan 'Dikotomi Kendali': Bedakan apa yang bisa kita kendalikan (pikiran, usaha) dan yang tidak (opini orang, cuaca). Kebahagiaan datang dari fokus pada apa yang bisa dikendalikan."},
+            {t: "The Republic", a: "Plato", s: "Karya filsafat politik paling berpengaruh. Plato membahas definisi Keadilan melalui dialog Sokrates. Ia memperkenalkan 'Alegori Gua' (manusia hidup dalam bayang-bayang ilusi) dan gagasan tentang 'Raja-Filsuf' sebagai pemimpin ideal."},
+            {t: "Thinking, Fast and Slow", a: "Daniel Kahneman", s: "Otak kita punya dua mode. Sistem 1: Cepat, intuitif, emosional (misal: 2+2). Sistem 2: Lambat, logis, butuh usaha (misal: 17x24). Buku ini mengungkap bias kognitif yang membuat kita sering mengambil keputusan tidak rasional."},
+            {t: "A Brief History of Time", a: "Stephen Hawking", s: "Hawking mencoba menjelaskan kosmologi modern kepada orang awam. Topik meliputi Big Bang, Lubang Hitam, Kerucut Cahaya, dan pencarian 'Teori Segalanya' yang menyatukan Fisika Kuantum (sangat kecil) dan Relativitas (sangat besar)."},
+            {t: "The Power of Habit", a: "Charles Duhigg", s: "Membongkar struktur kebiasaan: Cue (Tanda) -> Routine (Rutinitas) -> Reward (Hadiah). Untuk mengubah kebiasaan buruk, kita tidak bisa menghilangkan Tanda atau Hadiah, tapi kita harus mengubah Rutinitas di tengahnya."}
+        ],
+
+        // FUNGSI LOGIKA UTAMA
+        loadQuiz: function(category) {
+            const main = document.getElementById('main-area');
+            
+            // Khusus Generator Matematika
+            if(category === 'math') {
+                this.renderMathGen(main);
+                return;
+            }
+
+            let html = `<div class="card"><h2>${category.toUpperCase().replace('_', ' ')}</h2><p>Jawab pertanyaan berikut dengan tepat.</p></div>`;
+            
+            this.data[category].forEach((item, index) => {
+                html += `
+                <div class="q-box">
+                    <div class="q-text">Soal ${index + 1}: ${item.q}</div>
+                    <div class="input-group">
+                        <input type="text" id="ans-${category}-${index}" placeholder="Jawaban Anda...">
+                        <button class="btn" onclick="app.check('${category}', ${index}, '${item.a.replace(/'/g, "\\'")}')">Cek</button>
+                    </div>
+                    <div id="feed-${category}-${index}" class="feedback">
+                        <strong>Info:</strong> ${item.e}
+                    </div>
+                </div>`;
+            });
+            main.innerHTML = html;
+            window.scrollTo(0,0);
+        },
+
+        // GENERATOR MATEMATIKA (INFINITE)
+        renderMathGen: function(container) {
+            let html = `<div class="card"><h2>MATHEMATICS GENERATOR</h2><p>Soal ini dibuat secara otomatis oleh sistem (Tak Terbatas).</p></div>`;
+            for(let i=0; i<10; i++) { // Generate 10 soal baru tiap load
+                const a = Math.floor(Math.random() * 10) + 2;
+                const b = Math.floor(Math.random() * 20) + 1;
+                const x = Math.floor(Math.random() * 10) + 1;
+                const c = (a * x) + b; // Soal: ax + b = c, cari x
+                
+                html += `
+                <div class="q-box">
+                    <div class="q-text">Soal Gen-${i+1}: Selesaikan x untuk ${a}x + ${b} = ${c}</div>
+                    <div class="input-group">
+                        <input type="text" id="math-${i}" placeholder="Nilai x...">
+                                      <button class="btn" onclick="app.checkMath(${i}, ${x})">Cek</button>
+                    </div>
+                    <div id="feed-math-${i}" class="feedback">
+                        <strong>Cara:</strong> (${c} - ${b}) / ${a} = ${x}
+                    </div>
+                </div>`;
+            }
+            container.innerHTML = html;
+        },
+
+        loadExam: function() {
+            const main = document.getElementById('main-area');
+            // Gabungkan semua soal non-math
+            let allQ = [];
+            ['history', 'science', 'lang_en', 'lang_es', 'lang_zh'].forEach(cat => {
+                allQ = allQ.concat(this.data[cat]);
+            });
+            // Acak array
+            allQ.sort(() => 0.5 - Math.random());
+            const examQ = allQ.slice(0, 20); // Ambil 20 soal acak
+
+            let html = `<div class="card"><h2>UJIAN AKHIR (RANDOMIZED)</h2><p>20 Soal dipilih secara acak dari database sistem.</p></div>`;
+            examQ.forEach((item, index) => {
+                html += `
+                <div class="q-box">
+                    <div class="q-text">Ujian #${index + 1}: ${item.q}</div>
+                    <div class="input-group">
+                        <input type="text" id="exam-${index}" placeholder="Jawaban...">
+                        <button class="btn" onclick="app.checkExam(${index}, '${item.a.replace(/'/g, "\\'")}', '${item.e.replace(/'/g, "\\'")}')">Kunci Jawaban</button>
+                    </div>
+                    <div id="feed-exam-${index}" class="feedback"></div>
+                </div>`;
+            });
+            main.innerHTML = html;
+        },
+
+        loadLibrary: function() {
+            const main = document.getElementById('main-area');
+            let html = `<div class="card"><h2>THE GREAT LIBRARY</h2><p>Koleksi 10 Buku Fundamental Pengetahuan Dunia.</p></div><div class="lib-grid">`;
+            
+            this.books.forEach((b, i) => {
+                html += `
+                <div class="card book-card">
+                    <h3 style="margin:0">${b.t}</h3>
+                    <small style="color:#666">Penulis: ${b.a}</small><br>
+                    <button class="btn" style="margin-top:10px; background:#2980b9" onclick="document.getElementById('sum-${i}').style.display='block'">Baca Ringkasan</button>
+                    <div id="sum-${i}" class="book-summary">
+                        <strong>Ringkasan Eksekutif:</strong><br>${b.s}
+                    </div>
+                </div>`;
+            });
+            main.innerHTML = html + `</div>`;
+        },
+
+        // VALIDASI JAWABAN
+        check: function(cat, index, correctAns) {
+            const input = document.getElementById(`ans-${cat}-${index}`);
+            const feed = document.getElementById(`feed-${cat}-${index}`);
+            const userAns = input.value.toLowerCase().trim();
+            
+            if(userAns === correctAns) {
+                this.success(input, feed);
+            } else {
+                this.fail(input, feed, "Salah. Jawaban yang benar adalah: " + correctAns);
+            }
+        },
+
+        checkMath: function(index, correctAns) {
+            const input = document.getElementById(`math-${index}`);
+            const feed = document.getElementById(`feed-math-${index}`);
+            if(parseInt(input.value) === correctAns) {
+                this.success(input, feed);
+            } else {
+                this.fail(input, feed, "Hitungan salah.");
+            }
+        },
+
+        checkExam: function(index, correctAns, explanation) {
+            const input = document.getElementById(`exam-${index}`);
+            const feed = document.getElementById(`feed-exam-${index}`);
+            const userAns = input.value.toLowerCase().trim();
+            
+            if(userAns === correctAns) {
+                feed.innerHTML = `<strong>Benar!</strong> ${explanation}`;
+                this.success(input, feed);
+            } else {
+                feed.innerHTML = `<strong>Salah.</strong> Jawabannya: ${correctAns}. <br><em>${explanation}</em>`;
+                this.fail(input, feed);
+            }
+        },
+
+        // Helper UI
+        success: function(input, feed) {
+            input.style.borderColor = "var(--green)";
+            input.disabled = true;
+            feed.style.display = 'block';
+            feed.className = "feedback correct";
+            this.xp += 100;
+            document.getElementById('xp-val').innerText = this.xp;
+        },
+        fail: function(input, feed, msg) {
+            input.style.borderColor = "var(--red)";
+            if(msg) feed.innerHTML += `<br><small style='color:red'>${msg}</small>`; // Append error msg if needed
+            feed.style.display = 'block';
+            feed.className = "feedback wrong";
+        }
+    };
+
+    // Load default
+    window.onload = () => app.loadLibrary();
+</script>
+
+</body>
+</html>
